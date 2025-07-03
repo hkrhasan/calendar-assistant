@@ -1,10 +1,10 @@
-IMAGE ?= calendar-assistant
+IMAGE ?= calendar-assistant-backend
 
 
-.PHONY: build
-build:
-	docker build -t ${IMAGE} .
+.PHONY: build-backend
+build-backend:
+	docker build -f ./Dockerfile.backend -t ${IMAGE} .
 
-.PHONY: start
-start:
-	docker run -p 8000:8000 -p 8501:8501 --env-file .env calendar-assistant
+.PHONY: start-backend
+start-backend:
+	docker run -p 8000:8000 --env-file .env ${IMAGE} 

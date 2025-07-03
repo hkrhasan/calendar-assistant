@@ -8,8 +8,8 @@ import atexit
 from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from agent.assistant import CalendarAssistant
-from agent.schemas import ChatRequest, ChatResponse
+from .agent.assistant import CalendarAssistant
+from .agent.schemas import ChatRequest, ChatResponse
 
 
 # Load environment variables from .env if exists

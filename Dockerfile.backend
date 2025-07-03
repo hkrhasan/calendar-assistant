@@ -24,11 +24,13 @@ COPY src /app/src
 COPY create_credentials.py /app/
 RUN python /app/create_credentials.py
 
+# COPY credentials.json /app/credentials.json
+
 # Expose ports
-EXPOSE 8501 8000
+EXPOSE 8000
 
 # Start script
-COPY start.sh /app/
-RUN chmod +x /app/start.sh
+COPY start-backend.sh /app/
+RUN chmod +x /app/start-backend.sh
 
-CMD ["/app/start.sh"]
+CMD ["/app/start-backend.sh"]
