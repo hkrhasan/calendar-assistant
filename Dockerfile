@@ -20,7 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY src /app/src
-COPY credentials.json /app/credentials.json
+# Create credentials from environment
+COPY create_credentials.py /app/
+RUN python /app/create_credentials.py
 
 # Expose ports
 EXPOSE 8501 8000
