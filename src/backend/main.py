@@ -56,6 +56,8 @@ def get_or_create_session(session_id: str):
 async def chat(request: ChatRequest):
   try:
     assistant = get_or_create_session(request.session_id)
+    
+    logging.info("Assistant Session Id >> ", assistant.session_id)
     response = assistant.chat(request.message)
     sessions_db[request.session_id] = assistant.to_dict()
     return {"response": response, "session_id": request.session_id}

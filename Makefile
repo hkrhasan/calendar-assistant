@@ -15,7 +15,7 @@ build-frontend:
 
 .PHONY: start-frontend
 start-frontend:
-	docker run -p 8000:8000 --env-file .env ${FRONTEND_IMAGE}
+	docker run -p 8501:8501 --env-file .env ${FRONTEND_IMAGE}
 
 
 .PHONY: get-b64-cred

@@ -62,6 +62,9 @@ if prompt := st.chat_input("Ask about availability or book a meeting..."):
                 "message": prompt
             }
             response = requests.post(API_URL, json=payload)
+            
+            print("API >> ", API_URL) 
+            print(response) 
             if response.status_code == 200:
                 data = response.json()
                 reply = data["response"]
