@@ -5,7 +5,7 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
   PYTHONPATH=/app \
   IS_PRODUCTION=true \
-  PORT=8000
+  PORT=8501
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,17 +20,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY src /app/src
-# Create credentials from environment
-# COPY create_credentials.py /app/
-# RUN python /app/create_credentials.py
-
-# COPY credentials.json /app/credentials.json
 
 # Expose ports
-EXPOSE 8000
+EXPOSE 8501
 
 # Start script
-COPY start-backend.sh /app/
-RUN chmod +x /app/start-backend.sh
+COPY start-frontend.sh /app/
+RUN chmod +x /app/start-frontend.sh
 
-CMD ["/app/start-backend.sh"]
+CMD ["/app/start-frontend.sh"]

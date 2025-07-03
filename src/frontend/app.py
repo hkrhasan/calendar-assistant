@@ -2,16 +2,18 @@ import os
 import streamlit as st
 import requests
 import uuid
-# ... existing imports ...
+from dotenv import load_dotenv
+
+
 
 # Determine if we're in production
 IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false").lower() == "true"
 
 # Set backend URL
 if IS_PRODUCTION:
-    BACKEND_HOST = os.getenv("BACKEND_HOST", "http://localhost:8000")
+    BACKEND_HOST = os.getenv("BACKEND_HOST", "https://calendar-assistant-production-b9f1.up.railway.app")
 else:
-    BACKEND_HOST = "http://localhost:8000"
+    BACKEND_HOST = "https://calendar-assistant-production-b9f1.up.railway.app"
 
 API_URL = f"{BACKEND_HOST}/chat"
 RESET_URL = f"{BACKEND_HOST}/reset/"
@@ -60,7 +62,6 @@ if prompt := st.chat_input("Ask about availability or book a meeting..."):
                 "message": prompt
             }
             response = requests.post(API_URL, json=payload)
-            
             if response.status_code == 200:
                 data = response.json()
                 reply = data["response"]
