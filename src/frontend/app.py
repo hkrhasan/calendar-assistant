@@ -11,9 +11,9 @@ IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false").lower() == "true"
 
 # Set backend URL
 if IS_PRODUCTION:
-    BACKEND_HOST = os.getenv("BACKEND_HOST", "https://calendar-assistant-production-b9f1.up.railway.app")
+    BACKEND_HOST = os.getenv("BACKEND_HOST", "http://192.168.1.7:8000")
 else:
-    BACKEND_HOST = "https://calendar-assistant-production-b9f1.up.railway.app"
+    BACKEND_HOST = "http://192.168.1.7:8000"
 
 API_URL = f"{BACKEND_HOST}/chat"
 RESET_URL = f"{BACKEND_HOST}/reset/"
