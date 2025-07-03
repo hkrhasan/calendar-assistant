@@ -59,6 +59,7 @@ async def chat(request: ChatRequest):
     
     logging.info(f"Assistant Session Id >> {assistant.session_id}")
     response = assistant.chat(request.message)
+    
     sessions_db[request.session_id] = assistant.to_dict()
     return {"response": response, "session_id": request.session_id}
   except Exception as e:

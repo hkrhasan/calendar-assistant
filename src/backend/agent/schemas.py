@@ -18,3 +18,10 @@ class CreateBookingSchema(BaseModel):
 class ListEventsSchema(BaseModel):
     time_range: str = Field(..., description="Time range to list events (e.g., 'today', 'this week', 'next monday')")
     max_results: int = Field(5, description="Maximum number of events to return (default: 5)")
+    
+    
+class ConfirmBookingSchema(BaseModel):
+    confirmation: bool = Field(..., description="User confirmation (True/False)")
+    summary: str = Field(..., description="Event title")
+    start_iso: str = Field(..., description="Start time in ISO format")
+    end_iso: str = Field(..., description="End time in ISO format")

@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from .calendar_client import GoogleCalendar  # Relative import
-from .schemas import ListEventsSchema, CreateBookingSchema, CheckAvailabilitySchema
+from .schemas import ListEventsSchema, CreateBookingSchema, CheckAvailabilitySchema, ConfirmBookingSchema
 
 class CalendarAssistant:
   def __init__(self, session_id: str = None):
@@ -184,55 +184,55 @@ class CalendarAssistant:
       return {"error": f"Calendar error: {str(e)}"}
   
   def create_booking_tool(self, summary: str, time_range: str) -> dict:
-    """
-    Create calendar booking if time slot is available
-    Returns: {success: bool, event_link: str, message: str, error: str}
-    """
+    """Create calendar booking with confirmation logic"""
     try:
-      if not summary.strip():
-        return {"error": "Event summary is required"}
-          
+      # Parse time and format for display
       parsed_time = self.parse_time(time_range)
       if "error" in parsed_time:
-        return {"error": parsed_time["error"]}
-     
-      # Validate time is in future
-      if parsed_time["start"] < datetime.now(self.user_timezone):
-        return {
-            "error": "Cannot create events in the past",
-            "suggestion": "Please specify a future time"
-        } 
-      
-      # Check availability first
-      availability = self.check_availability_tool(time_range)
-      if availability.get("error"):
-        return availability
+          return {"error": parsed_time["error"]}
           
-      if not availability["available"]:
-        return {
-            "error": "Time slot unavailable", 
-            "busy_slots": availability.get("busy_slots", []),
-            "suggestions": availability.get("suggestions", ["Please choose another time"])
-        }
-      
-      start_iso = parsed_time["start"].isoformat()
-      end_iso = parsed_time["end"].isoformat()
-      
-      # Create the booking
-      event = self.calendar.create_booking(summary, start_iso, end_iso)
-      
       formatted_start = self.format_time(parsed_time["start"])
       formatted_end = self.format_time(parsed_time["end"])
       
+      # Create confirmation message
+      confirmation_msg = (
+        f"📅 Please confirm booking:\n\n"
+        f"**Event**: {summary}\n"
+        f"**Start**: {formatted_start}\n"
+        f"**End**: {formatted_end}\n\n"
+        f"Type 'yes' to confirm or 'no' to cancel"
+      )
+      
+      # Return instead of creating immediately
       return {
-        "success": True,
-        "event_link": event.get("htmlLink", "No link available"),
-        "message": f"✅ Booking created: '{summary}' from {formatted_start} to {formatted_end}",
-        "event_id": event.get("id", "")
+        "confirmation_required": True,
+        "proposed_summary": summary,
+        "proposed_start": parsed_time["start"].isoformat(),
+        "proposed_end": parsed_time["end"].isoformat(),
+        "message": confirmation_msg
       }
     except Exception as e:
-      self.logger.error(f"Booking creation failed: {str(e)}")
-      return {"error": f"Booking error: {str(e)}"}
+      return {"error": f"Error: {str(e)}"} 
+      
+  
+  def confirm_booking_tool(self, confirmation: bool, 
+                            summary: str, 
+                            start_iso: str, 
+                            end_iso: str) -> dict:
+    """Finalize booking after confirmation"""
+    if not confirmation:
+      return {"success": False, "message": "❌ Booking canceled"}
+        
+    try:
+      # Create the booking
+      event = self.calendar.create_booking(summary, start_iso, end_iso)
+      return {
+          "success": True,
+          "event_link": event.get("htmlLink", "No link available"),
+          "message": "✅ Booking confirmed and created"
+      }
+    except Exception as e:
+      return {"error": f"Booking error: {str(e)}"} 
   
   def list_events_tool(self, time_range: str, max_results: int = 5) -> dict:
       """
@@ -291,12 +291,9 @@ class CalendarAssistant:
           name="CheckAvailability",
           func=self.check_availability_tool,
           description=(
-            "Create a new calendar event. Requires event summary and time range. "
-            "Always specify full date including year. "
-            "Examples: "
-            "'Team Meeting' and 'tomorrow 2-3pm', "
-            "'Doctor Appointment' and 'July 5, 2024 10am to 11am', "
-            "'Project Deadline' and '2025-07-10 17:00'"
+            "Check calendar availability for a specific time range. "
+            "Input should be a natural language time expression like: "
+            "'tomorrow 2-4pm', 'next monday 9am to 5pm', '2025-07-05 14:00 to 16:00', or '4pm to 6pm'"
           ),
           args_schema=CheckAvailabilitySchema
         ),
@@ -304,13 +301,19 @@ class CalendarAssistant:
           name="CreateBooking",
           func=self.create_booking_tool,
           description=(
-              "Create a new calendar event. Requires event summary and time range. "
-              "Examples: "
-              "'Team Meeting' and 'tomorrow 2-3pm', "
-              "'Doctor Appointment' and 'next friday 10am to 11am', "
-              "'Project Deadline' and '2025-07-10 17:00'"
+              "Initiate booking process. Returns confirmation request. "
+              "Requires event summary and time range."
           ),
           args_schema=CreateBookingSchema
+        ),
+        StructuredTool.from_function(
+            name="ConfirmBooking",
+            func=self.confirm_booking_tool,
+            description=(
+                "Finalize booking after user confirmation. "
+                "Requires confirmation status, event summary, start and end times."
+            ),
+            args_schema=ConfirmBookingSchema
         ),
         StructuredTool.from_function(
           name="ListEvents",
@@ -351,6 +354,16 @@ class CalendarAssistant:
       # Add conversation to history
       self.chat_history.append(HumanMessage(content=user_input))
       self.chat_history.append(AIMessage(content=response["output"]))
+      
+      # After getting response from agent_executor
+      if "confirmation_required" in response["output"]:
+        # Store proposal in session state
+        self.chat_history.append({
+          "type": "proposal",
+          "summary": response["output"]["proposed_summary"],
+          "start": response["output"]["proposed_start"],
+          "end": response["output"]["proposed_end"]
+        })
       
       return response["output"]
     except Exception as e:
